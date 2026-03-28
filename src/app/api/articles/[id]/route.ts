@@ -9,16 +9,51 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { searchParams } = new URL(request.url)
+    const lang = searchParams.get('lang') === 'en' ? 'en' : 'id'
+    const locales = lang === 'en' ? ['en', 'id'] : ['id']
+    const prismaAny = prisma as any
     const { id } = await params
-    const article = await prisma.article.findUnique({
-      where: { id }
+    const article = await prismaAny.article.findUnique({
+      where: { id },
+      include: {
+        translations: {
+          where: {
+            locale: {
+              in: locales,
+            },
+          },
+        },
+      },
     })
     
     if (!article) {
       return NextResponse.json({ error: 'Article not found' }, { status: 404 })
     }
     
-    return NextResponse.json(article)
+    const localized =
+      article.translations.find((t: any) => t.locale === lang) ??
+      article.translations.find((t: any) => t.locale === 'id')
+
+    if (!localized) {
+      return NextResponse.json({ error: 'Article translation not found' }, { status: 404 })
+    }
+
+    return NextResponse.json({
+      id: article.id,
+      category: article.category,
+      author: article.author,
+      image: article.image,
+      status: article.status,
+      createdAt: article.createdAt,
+      publishedAt: article.publishedAt,
+      updatedAt: article.updatedAt,
+      locale: localized.locale,
+      title: localized.title,
+      slug: localized.slug,
+      excerpt: localized.excerpt,
+      content: localized.content,
+    })
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch article' }, { status: 500 })
   }
@@ -36,33 +71,101 @@ export async function PUT(
     const payload = await verifyToken(token)
     if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    const prismaAny = prisma as any
     const { id } = await params
     const data = await request.json()
-    
-    let updateData: any = { ...data }
-    
+    const locale = data.lang === 'en' ? 'en' : 'id'
+
+    let uniqueSlug: string | undefined
     if (data.title) {
       const baseSlug = slugify(data.title)
-      const existingWithSlug = await prisma.article.findFirst({
-        where: { slug: baseSlug, NOT: { id } }
-      })
-      if (existingWithSlug) {
-        updateData.slug = `${baseSlug}-${Math.floor(Math.random() * 1000)}`
-      } else {
-        updateData.slug = baseSlug
+      uniqueSlug = baseSlug
+      let counter = 1
+      while (
+        await prismaAny.articleTranslation.findFirst({
+          where: {
+            slug: uniqueSlug,
+            locale,
+            NOT: {
+              articleId: id,
+            },
+          },
+        })
+      ) {
+        uniqueSlug = `${baseSlug}-${counter}`
+        counter++
       }
     }
-    
-    if (data.status === 'published' && !updateData.publishedAt) {
-      updateData.publishedAt = new Date()
+
+    let publishedAtUpdate: Date | null | undefined
+    if (data.status === 'published') {
+      publishedAtUpdate = new Date()
+    } else if (data.status === 'draft') {
+      publishedAtUpdate = null
     }
 
-    const article = await prisma.article.update({
+    const article = await prismaAny.article.update({
       where: { id },
-      data: updateData
+      data: {
+        category: data.category,
+        author: data.author,
+        image: data.image,
+        status: data.status,
+        ...(publishedAtUpdate !== undefined ? { publishedAt: publishedAtUpdate } : {}),
+        translations: {
+          upsert: {
+            where: {
+              articleId_locale: {
+                articleId: id,
+                locale,
+              },
+            },
+            create: {
+              locale,
+              title: data.title || 'Tanpa Judul',
+              slug: uniqueSlug || slugify(data.title || `article-${Date.now()}`),
+              excerpt: data.excerpt || '',
+              content: data.content || '',
+            },
+            update: {
+              title: data.title,
+              slug: uniqueSlug,
+              excerpt: data.excerpt,
+              content: data.content,
+            },
+          },
+        },
+      },
+      include: {
+        translations: {
+          where: {
+            locale: {
+              in: locale === 'en' ? ['en', 'id'] : ['id'],
+            },
+          },
+        },
+      },
     })
 
-    return NextResponse.json(article)
+    const localized =
+      article.translations.find((t: any) => t.locale === locale) ??
+      article.translations.find((t: any) => t.locale === 'id')
+
+    return NextResponse.json({
+      id: article.id,
+      category: article.category,
+      author: article.author,
+      image: article.image,
+      status: article.status,
+      createdAt: article.createdAt,
+      publishedAt: article.publishedAt,
+      updatedAt: article.updatedAt,
+      locale: localized?.locale || locale,
+      title: localized?.title || data.title || 'Tanpa Judul',
+      slug: localized?.slug || uniqueSlug || '',
+      excerpt: localized?.excerpt || data.excerpt || '',
+      content: localized?.content || data.content || '',
+    })
   } catch (error) {
     return NextResponse.json({ error: 'Failed to update article' }, { status: 500 })
   }

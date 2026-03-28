@@ -9,25 +9,40 @@ interface Article {
   author: string
   image: string
   excerpt: string
-  lang: string
+  lang?: string
+  locale?: 'id' | 'en'
   status: string
-  publishedAt: string | null
-  createdAt: string
+  publishedAt: string | Date | null
+  createdAt: string | Date
 }
 
-export function ArticleCard({ article, showStatus = false, onEdit, onDelete, isAdmin = false, lang = 'id' }: {
+export function ArticleCard({
+  article,
+  showStatus = false,
+  onEdit,
+  onDelete,
+  isAdmin = false,
+  lang = 'id',
+  showEditText = false,
+  statusLabelMode = 'capitalize',
+}: {
   article: Article,
   showStatus?: boolean,
   onEdit?: (id: string) => void,
   onDelete?: (id: string) => void,
   isAdmin?: boolean,
-  lang?: 'id' | 'en'
+  lang?: 'id' | 'en',
+  showEditText?: boolean,
+  statusLabelMode?: 'capitalize' | 'raw'
 }) {
   const t = translations[lang]
   const dateStr = article.publishedAt || article.createdAt
   const date = new Date(dateStr).toLocaleDateString(lang === 'id' ? 'id-ID' : 'en-US', {
     day: '2-digit', month: 'long', year: 'numeric'
   })
+  const statusLabel = statusLabelMode === 'raw'
+    ? article.status
+    : article.status.charAt(0).toUpperCase() + article.status.slice(1)
 
   return (
     <article className="bg-white rounded-3xl overflow-hidden shadow-lg border border-stone-100 group flex flex-col h-full">
@@ -37,8 +52,8 @@ export function ArticleCard({ article, showStatus = false, onEdit, onDelete, isA
             {article.category || t.news.defaultCategory}
           </span>
           {showStatus && (
-            <span className={`text-xs font-bold px-3 py-1 rounded-full shadow-sm ${article.status === 'published' ? 'bg-emerald-600 text-white' : 'bg-stone-700 text-white'}`}>
-              {article.status.charAt(0).toUpperCase() + article.status.slice(1)}
+            <span className={`text-xs font-bold px-3 py-1 rounded-full shadow-sm ${article.status === 'published' ? 'bg-emerald-100 text-emerald-700' : 'bg-stone-200 text-stone-700'}`}>
+              {statusLabel}
             </span>
           )}
         </div>
@@ -69,9 +84,15 @@ export function ArticleCard({ article, showStatus = false, onEdit, onDelete, isA
                 </button>
               )}
               {isAdmin && !onEdit && (
-                <Link href="/editor" className="text-stone-400 hover:text-emerald-600 transition-colors" title="Edit di Dashboard">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                </Link>
+                showEditText ? (
+                  <Link href="/editor" className="text-stone-500 hover:text-emerald-600 transition-colors text-sm" title="Edit di Dashboard">
+                    Edit
+                  </Link>
+                ) : (
+                  <Link href="/editor" className="text-stone-400 hover:text-emerald-600 transition-colors" title="Edit di Dashboard">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                  </Link>
+                )
               )}
               {isAdmin && onDelete && (
                 <button onClick={() => onDelete(article.id)} className="text-stone-400 hover:text-red-500 transition-colors">

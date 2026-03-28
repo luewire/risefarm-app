@@ -14,12 +14,12 @@ export function ArticlesPreviewSection() {
   const [articles, setArticles] = useState([])
 
   useEffect(() => {
-    fetch(`/api/articles`)
+    fetch(`/api/articles?lang=${lang}`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setArticles(data.slice(0, 3) as never)
       })
-  }, [])
+  }, [lang])
 
   return (
     <section id="articles" className="py-24 bg-[#F8F4ED]">

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Leaf, Menu, X, SquarePen } from 'lucide-react'
+import { Leaf, Menu, X, SquarePen, ChevronDown, Image as ImageIcon } from 'lucide-react'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useAuth } from '@/hooks/useAuth'
 import { translations } from '@/lib/translations'
@@ -65,10 +65,22 @@ export function Navbar() {
 
             {/* Admin Write Article */}
             {isAuthenticated && (
-              <Link href="/editor" className="font-medium text-sm flex items-center gap-1.5 transition-colors text-emerald-400 hover:text-orange-500">
-                <span>{t.nav.write}</span>
-                <SquarePen className="w-4 h-4 mt-0.5" />
-              </Link>
+              <div className="relative group">
+                <button className="font-medium text-sm flex items-center gap-1.5 transition-colors text-emerald-400 hover:text-orange-500 py-2">
+                  <span>Menu Admin</span>
+                  <ChevronDown className="w-4 h-4 mt-0.5 group-hover:rotate-180 transition-transform" />
+                </button>
+                <div className="absolute top-full -right-4 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-stone-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all flex flex-col py-3 z-50">
+                  <Link href="/editor" className="px-5 py-2.5 text-sm font-semibold text-stone-700 hover:text-emerald-700 hover:bg-emerald-50 transition-colors flex items-center gap-3">
+                    <SquarePen className="w-4 h-4" />
+                    Tulis Artikel
+                  </Link>
+                  <Link href="/editor/gallery" className="px-5 py-2.5 text-sm font-semibold text-stone-700 hover:text-emerald-700 hover:bg-emerald-50 transition-colors flex items-center gap-3">
+                    <ImageIcon className="w-4 h-4" />
+                    Tambahkan Foto
+                  </Link>
+                </div>
+              </div>
             )}
           </div>
 
@@ -106,7 +118,17 @@ export function Navbar() {
           <Link href="/#contact" onClick={() => setMobileMenuOpen(false)} className="text-white/90 font-medium text-lg hover:text-orange-500 transition-colors">{t.nav.contact}</Link>
           
           {isAuthenticated && (
-            <Link href="/editor" onClick={() => setMobileMenuOpen(false)} className="text-emerald-400 font-bold text-lg hover:text-orange-500 transition-colors">{t.nav.write}</Link>
+            <div className="flex flex-col gap-3 mt-2 pt-4 border-t border-white/10">
+               <span className="text-white/50 text-xs font-bold uppercase tracking-wider">Menu Admin</span>
+               <Link href="/editor" onClick={() => setMobileMenuOpen(false)} className="text-emerald-400 font-bold text-lg hover:text-orange-500 transition-colors flex items-center gap-2">
+                 <SquarePen className="w-5 h-5" />
+                 Tulis Artikel
+               </Link>
+               <Link href="/editor/gallery" onClick={() => setMobileMenuOpen(false)} className="text-emerald-400 font-bold text-lg hover:text-orange-500 transition-colors flex items-center gap-2">
+                 <ImageIcon className="w-5 h-5" />
+                 Tambahkan Foto
+               </Link>
+            </div>
           )}
           
           <div className="flex gap-4 pt-4 border-t border-white/10">

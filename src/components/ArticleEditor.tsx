@@ -1,10 +1,18 @@
 'use client'
 
 import { useState } from 'react'
+import { CheckCircle2, CloudUpload, Loader2, X, AlertCircle } from 'lucide-react'
 
 export function ArticleEditor({ initialArticles }: { initialArticles: any[] }) {
   const [articles, setArticles] = useState(initialArticles)
   const [currentId, setCurrentId] = useState<string>('')
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null)
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type })
+    setTimeout(() => setToast(null), 3000)
+  }
   
   const [form, setForm] = useState({
     title: '',
@@ -48,7 +56,7 @@ export function ArticleEditor({ initialArticles }: { initialArticles: any[] }) {
     const method = currentId ? 'PUT' : 'POST'
     
     if (!form.title) {
-        alert("Judul artikel tidak boleh kosong!")
+        showToast("Judul artikel tidak boleh kosong!", 'error')
         return
     }
 
@@ -59,11 +67,11 @@ export function ArticleEditor({ initialArticles }: { initialArticles: any[] }) {
     })
 
     if (res.ok) {
-      alert(currentId ? 'Artikel diperbarui' : 'Artikel baru berhasil disimpan')
+      showToast(currentId ? 'Artikel diperbarui' : 'Artikel baru berhasil disimpan', 'success')
       handleCreateNew()
       refreshArticles()
     } else {
-      alert('Gagal menyimpan artikel. Perhatikan format respons atau koneksi.')
+      showToast('Gagal menyimpan artikel. Periksa koneksi Anda.', 'error')
     }
   }
 
@@ -76,8 +84,47 @@ export function ArticleEditor({ initialArticles }: { initialArticles: any[] }) {
     }
   }
 
+  const handleImageUpload = async (file: File) => {
+    setUploadingImage(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const res = await fetch('/api/upload-image', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const data = await res.json()
+      if (!res.ok) {
+        showToast(data.error || 'Gagal upload gambar', 'error')
+        return
+      }
+
+      setForm((prev) => ({ ...prev, image: data.url }))
+      showToast('Gambar berhasil diunggah', 'success')
+    } catch (error) {
+      console.error(error)
+      showToast('Gagal upload gambar, periksa koneksi internet', 'error')
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
   return (
-    <div className="container mx-auto px-6 md:px-12">
+    <div className="container mx-auto px-6 md:px-12 relative">
+      {toast && (
+        <div className="fixed top-24 right-5 sm:right-10 z-[100] animate-in slide-in-from-top-4 fade-in duration-300 pointer-events-auto">
+          <div className={`flex items-center gap-3 px-5 py-3 rounded-2xl shadow-lg border ${toast.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-red-50 border-red-200 text-red-900'}`}>
+            {toast.type === 'success' ? <CheckCircle2 className="w-5 h-5 text-emerald-600" /> : <AlertCircle className="w-5 h-5 text-red-600" />}
+            <span className="font-semibold text-sm">{toast.message}</span>
+            <button onClick={() => setToast(null)} className="ml-2 hover:opacity-70 transition-opacity p-1">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="grid lg:grid-cols-12 gap-8">
         <div className="lg:col-span-8">
           <div className="bg-white rounded-3xl shadow-sm border border-stone-200 p-6 md:p-8">
@@ -120,8 +167,40 @@ export function ArticleEditor({ initialArticles }: { initialArticles: any[] }) {
                   <input value={form.author} onChange={e => setForm({...form, author: e.target.value})} type="text" className="w-full px-4 py-4 rounded-2xl border border-stone-200 outline-none focus:border-emerald-500" placeholder="Tim RISEFARM" />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-2">URL Cover Image</label>
-                  <input value={form.image} onChange={e => setForm({...form, image: e.target.value})} type="text" className="w-full px-4 py-4 rounded-2xl border border-stone-200 outline-none focus:border-emerald-500" placeholder="/images/file.jpg" />
+                  <label className="block text-sm font-semibold mb-2">Cover Image</label>
+                  <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                      <label className={`inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold cursor-pointer transition-colors ${uploadingImage ? 'bg-stone-200 text-stone-600' : 'bg-stone-900 text-white hover:bg-stone-800'}`}>
+                        {uploadingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <CloudUpload className="w-5 h-5" />}
+                        {uploadingImage ? 'Mengupload...' : 'Upload Photo'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          disabled={uploadingImage}
+                          onChange={(e) => {
+                            const selected = e.target.files?.[0]
+                            if (selected) handleImageUpload(selected)
+                            e.currentTarget.value = ''
+                          }}
+                        />
+                      </label>
+
+                      <div className="text-xs text-stone-500">
+                        Pilih file gambar untuk cover artikel.
+                      </div>
+                    </div>
+
+                    {form.image && (
+                      <div className="mt-4 flex items-center gap-2 text-sm text-emerald-700 font-medium bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                        <CheckCircle2 className="w-5 h-5" />
+                        <div>
+                          <p>Gambar berhasil ditambahkan</p>
+                          <p className="text-xs text-emerald-600 font-normal truncate max-w-[200px] sm:max-w-xs mt-0.5">{form.image.split('/').pop()}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 

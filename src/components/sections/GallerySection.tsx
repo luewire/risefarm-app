@@ -3,10 +3,10 @@
 import { useLanguage } from '@/hooks/useLanguage'
 import { translations } from '@/lib/translations'
 import { ChevronRight, X } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 // All gallery images in one place — easy to extend
-const GALLERY_IMAGES = [
+const DEFAULT_GALLERY_IMAGES = [
   { src: '/images/pengecekan_berulang_pak_budi.jpeg', alt: 'Petani di ladang', caption: 'Pemberdayaan Petani Lokal' },
   { src: '/images/pickup_ubi.jpeg', alt: 'Pickup Ubi', caption: 'Distribusi Ubi Segar' },
   { src: '/images/ubiakbar.jpeg', alt: 'Produk ubi', caption: 'Produk Unggulan' },
@@ -22,6 +22,37 @@ export function GallerySection() {
   const t = translations[lang].gallery
   const [showFull, setShowFull] = useState(false)
   const [lightbox, setLightbox] = useState<string | null>(null)
+  const [galleryImages, setGalleryImages] = useState(DEFAULT_GALLERY_IMAGES)
+
+  useEffect(() => {
+    // Fetch dynamic gallery images from API
+    async function fetchGallery() {
+      try {
+        const res = await fetch('/api/gallery')
+        if (res.ok) {
+          const data = await res.json()
+          if (data && data.length > 0) {
+            // Map the API data to match the expected format and prepend them to the default images
+            const formattedData = data.map((img: any) => ({
+              src: img.url,
+              alt: img.caption || 'Risefarm Gallery',
+              caption: img.caption || 'Dokumentasi RISEFARM'
+            }))
+            
+            // Limit total default images a bit if we have many new ones, or just combine them all
+            setGalleryImages([...formattedData, ...DEFAULT_GALLERY_IMAGES])
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load gallery images', error)
+      }
+    }
+    
+    fetchGallery()
+  }, [])
+
+  // Guard to ensure we always have something to show
+  const displayImages = galleryImages.length > 0 ? galleryImages : DEFAULT_GALLERY_IMAGES
 
   return (
     <>
@@ -44,14 +75,14 @@ export function GallerySection() {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
             <div className="fade-in-up col-span-2 row-span-2">
-              <div className="h-64 md:h-[500px] rounded-3xl overflow-hidden group relative cursor-pointer" onClick={() => setLightbox(GALLERY_IMAGES[0].src)}>
-                <img src={GALLERY_IMAGES[0].src} alt={GALLERY_IMAGES[0].alt} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+              <div className="h-64 md:h-[500px] rounded-3xl overflow-hidden group relative cursor-pointer" onClick={() => setLightbox(displayImages[0].src)}>
+                <img src={displayImages[0].src} alt={displayImages[0].alt} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-8">
-                  <p className="text-white font-bold text-xl">{t.caption1}</p>
+                  <p className="text-white font-bold text-xl">{displayImages[0].caption || t.caption1}</p>
                 </div>
               </div>
             </div>
-            {GALLERY_IMAGES.slice(1, 4).map((img, i) => (
+            {displayImages.slice(1, 4).map((img, i) => (
               <div key={i} className={`fade-in-up${i === 2 ? ' col-span-2 md:col-span-2' : ''}`}>
                 <div className="h-48 md:h-[238px] rounded-3xl overflow-hidden group relative cursor-pointer" onClick={() => setLightbox(img.src)}>
                   <img src={img.src} alt={img.alt} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
@@ -65,7 +96,7 @@ export function GallerySection() {
               onClick={() => setShowFull(true)}
               className="px-8 py-4 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-full transition-all shadow-md"
             >
-              {t.all} ({GALLERY_IMAGES.length} foto) →
+              {t.all} ({displayImages.length} foto) →
             </button>
           </div>
         </div>
@@ -78,14 +109,14 @@ export function GallerySection() {
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h2 className="text-3xl font-bold text-white">{t.title}</h2>
-                <p className="text-stone-400 mt-1">{GALLERY_IMAGES.length} foto</p>
+                <p className="text-stone-400 mt-1">{displayImages.length} foto</p>
               </div>
               <button onClick={() => setShowFull(false)} className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors">
                 <X className="w-6 h-6" />
               </button>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {GALLERY_IMAGES.map((img, i) => (
+              {displayImages.map((img, i) => (
                 <div key={i} className="group relative aspect-square rounded-2xl overflow-hidden cursor-pointer" onClick={() => setLightbox(img.src)}>
                   <img src={img.src} alt={img.alt} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">

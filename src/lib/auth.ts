@@ -2,7 +2,7 @@ import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
 
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET_KEY || "risefarm-fallback-secret-2026",
+  process.env.JWT_SECRET_KEY || process.env.JWT_SECRET || "risefarm-fallback-secret-2026",
 );
 
 export async function hashPassword(password: string): Promise<string> {
