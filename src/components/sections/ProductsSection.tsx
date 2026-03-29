@@ -162,7 +162,7 @@ export function ProductsSection() {
                     <div className="h-64 overflow-hidden relative shrink-0">
                       <div className="absolute top-4 right-4 bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full z-10">{t.badge3}</div>
                       <Image
-                        src="https://images.unsplash.com/photo-1615486171448-4afd28d488f2?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                        src="/images/hasil.jpeg"
                         alt="Sayuran"
                         fill
                         sizes="(max-width: 768px) 85vw, (max-width: 1024px) 50vw, 33vw"

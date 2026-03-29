@@ -55,7 +55,7 @@ export function ProductEditor() {
   const fetchProducts = async (signal?: AbortSignal) => {
     try {
       setLoading(true)
-      const res = await fetch('/api/products', { signal })
+      const res = await fetch('/api/products?admin=true', { signal, cache: 'no-store' })
       const data = await res.json()
       if (res.ok) setProducts(data)
     } catch (e) {

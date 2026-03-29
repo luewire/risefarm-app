@@ -46,7 +46,7 @@ const productsData = [
     }
   },
   {
-    image: 'https://images.unsplash.com/photo-1615486171448-4afd28d488f2?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+    image: '/images/hasil.jpeg',
     badgeColor: 'purple',
     link: 'https://wa.me/6281281091257',
     translations: {

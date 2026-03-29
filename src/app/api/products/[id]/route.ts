@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import prisma from '@/lib/prisma'
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -64,6 +65,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       include: { translations: true }
     })
 
+    revalidatePath('/', 'layout')
+    revalidatePath('/editor/products')
+
     return NextResponse.json(updatedProduct)
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
@@ -76,6 +80,10 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     await prisma.product.delete({
       where: { id },
     })
+
+    revalidatePath('/', 'layout')
+    revalidatePath('/editor/products')
+
     return NextResponse.json({ success: true })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
