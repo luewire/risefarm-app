@@ -2,6 +2,7 @@
 
 import { useLanguage } from '@/hooks/useLanguage'
 import { translations } from '@/lib/translations'
+import Image from 'next/image'
 
 export function TestimonialsSection() {
   const { lang } = useLanguage()
@@ -19,8 +20,14 @@ export function TestimonialsSection() {
               <div className="text-6xl text-orange-200 absolute top-6 right-8 font-serif">"</div>
               <p className="text-stone-600 text-lg italic mb-8 relative z-10 leading-relaxed">{t.t1}</p>
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-emerald-200 rounded-full overflow-hidden">
-                  <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80" alt={t.t1n} className="w-full h-full object-cover" />
+                <div className="w-14 h-14 bg-emerald-200 rounded-full overflow-hidden relative">
+                  <Image
+                    src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80"
+                    alt={t.t1n}
+                    fill
+                    sizes="56px"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <div>
                   <h4 className="font-bold text-emerald-950">{t.t1n}</h4>
@@ -34,8 +41,14 @@ export function TestimonialsSection() {
               <div className="text-6xl text-purple-200 absolute top-6 right-8 font-serif">"</div>
               <p className="text-stone-600 text-lg italic mb-8 relative z-10 leading-relaxed">{t.t2}</p>
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-purple-200 rounded-full overflow-hidden">
-                  <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80" alt={t.t2n} className="w-full h-full object-cover" />
+                <div className="w-14 h-14 bg-purple-200 rounded-full overflow-hidden relative">
+                  <Image
+                    src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80"
+                    alt={t.t2n}
+                    fill
+                    sizes="56px"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <div>
                   <h4 className="font-bold text-emerald-950">{t.t2n}</h4>

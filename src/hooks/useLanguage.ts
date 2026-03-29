@@ -1,28 +1,31 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useLayoutEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 export type Language = 'id' | 'en'
 
+const getCookieLanguage = (): Language => {
+  if (typeof document === 'undefined') return 'id'
+  const match = document.cookie.match(new RegExp('(^| )risefarm_lang=([^;]+)'))
+  return match?.[2] === 'en' ? 'en' : 'id'
+}
+
 export function useLanguage() {
-  const [lang, setLang] = useState<Language>('id')
+  const [lang, setLang] = useState<Language>(() => getCookieLanguage())
   const router = useRouter()
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const match = document.cookie.match(new RegExp('(^| )risefarm_lang=([^;]+)'))
-    if (match) {
-      setLang(match[2] as Language)
-    } else {
-      document.cookie = 'risefarm_lang=id; path=/'
+    if (!match) {
+      document.cookie = 'risefarm_lang=id; path=/; max-age=31536000'
     }
   }, [])
 
   const changeLanguage = (newLang: Language) => {
     document.cookie = `risefarm_lang=${newLang}; path=/; max-age=31536000` // 1 year
     setLang(newLang)
-    // Force a full window reload so ALL client components pick up the new cookie
-    window.location.reload()
+    router.refresh()
   }
 
   return { lang, changeLanguage }

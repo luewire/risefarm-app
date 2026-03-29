@@ -8,12 +8,12 @@ export async function POST(request: Request) {
     const { username, password } = await request.json()
     const admin = await prisma.admin.findUnique({ where: { username } })
     if (!admin) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+      return NextResponse.json({ error: 'Username atau Password salah' }, { status: 401 })
     }
 
     const isValid = await verifyPassword(password, admin.passwordHash)
     if (!isValid) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+      return NextResponse.json({ error: 'Username atau Password salah' }, { status: 401 })
     }
 
     const token = await signToken({ sub: admin.id, username: admin.username })

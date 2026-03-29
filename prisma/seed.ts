@@ -51,7 +51,7 @@ async function main() {
     },
   })
 
-  // Article 2: Indonesian only, useful to test EN -> ID fallback.
+  // Article 2: now has both Indonesian and English translations.
   await prismaAny.article.create({
     data: {
       category: 'Edukasi',
@@ -60,17 +60,28 @@ async function main() {
       status: 'published',
       publishedAt: new Date(Date.now() - 86400000),
       translations: {
-        create: {
-          locale: 'id',
-          title: '5 Tips Menjaga Kualitas Ubi Setelah Panen',
-          slug: '5-tips-menjaga-kualitas-ubi-setelah-panen',
-          excerpt: 'Penyimpanan, pembersihan, dan pengemasan yang tepat sangat menentukan kualitas ubi sampai ke pelanggan.',
-          content:
-            'Menjaga kualitas ubi setelah panen adalah kunci utama untuk mempertahankan kesegaran produk.\n\nPertama, lakukan sortir awal untuk memisahkan ubi yang rusak. Kedua, hindari pencucian berlebihan jika produk belum akan dikirim.\n\n## Pengemasan\n\nGunakan kemasan yang memiliki sirkulasi udara baik agar kelembapan tetap terkontrol.\n\n## Distribusi\n\nPastikan pengiriman dilakukan tepat waktu dengan handling yang minim benturan.',
-        },
+        create: [
+          {
+            locale: 'id',
+            title: '5 Tips Menjaga Kualitas Ubi Setelah Panen',
+            slug: '5-tips-menjaga-kualitas-ubi-setelah-panen',
+            excerpt: 'Penyimpanan, pembersihan, dan pengemasan yang tepat sangat menentukan kualitas ubi sampai ke pelanggan.',
+            content:
+              'Menjaga kualitas ubi setelah panen adalah kunci utama untuk mempertahankan kesegaran produk.\n\nPertama, lakukan sortir awal untuk memisahkan ubi yang rusak. Kedua, hindari pencucian berlebihan jika produk belum akan dikirim.\n\n## Pengemasan\n\nGunakan kemasan yang memiliki sirkulasi udara baik agar kelembapan tetap terkontrol.\n\n## Distribusi\n\nPastikan pengiriman dilakukan tepat waktu dengan handling yang minim benturan.',
+          },
+          {
+            locale: 'en',
+            title: '5 Tips to Maintain Sweet Potato Quality After Harvest',
+            slug: '5-tips-to-maintain-sweet-potato-quality-after-harvest',
+            excerpt: 'Proper storage, cleaning, and packaging are key to delivering sweet potatoes in top condition to customers.',
+            content:
+              'Maintaining sweet potato quality after harvest is essential to preserving product freshness.\n\nFirst, perform an initial sorting to remove damaged tubers. Second, avoid excessive washing if the product is not yet ready for delivery.\n\n## Packaging\n\nUse packaging with good air circulation to keep moisture levels under control.\n\n## Distribution\n\nEnsure timely delivery with minimal impact handling to preserve product integrity.',
+          },
+        ],
       },
     },
   })
+
 
   console.log('Seed completed')
 }

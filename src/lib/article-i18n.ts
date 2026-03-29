@@ -148,3 +148,44 @@ export async function getArticlesByLocaleWithFallback(
     })
     .filter((article: ArticleLocalized | null): article is ArticleLocalized => article !== null)
 }
+
+export async function getAllArticlesForAdmin(): Promise<ArticleLocalized[]> {
+  const prismaAny = prisma as any
+
+  const articles = await prismaAny.article.findMany({
+    include: {
+      translations: true, // semua locale, tanpa filter
+    },
+    orderBy: { createdAt: 'desc' },
+  })
+
+  return articles
+    .map((article: any) => {
+      // Prefer ID, fallback to EN, then whatever is available
+      const localized =
+        article.translations.find((t: any) => t.locale === 'id') ??
+        article.translations.find((t: any) => t.locale === 'en') ??
+        article.translations[0]
+
+      if (!localized) return null
+
+      return {
+        id: article.id,
+        category: article.category,
+        author: article.author,
+        image: article.image,
+        status: article.status,
+        createdAt: article.createdAt,
+        publishedAt: article.publishedAt,
+        updatedAt: article.updatedAt,
+        locale: localized.locale as ActiveLocale,
+        title: localized.title,
+        slug: localized.slug,
+        excerpt: localized.excerpt,
+        content: localized.content,
+        translations: article.translations, // full array for editor hydration
+      }
+    })
+    .filter((article: any): article is ArticleLocalized => article !== null)
+}
+

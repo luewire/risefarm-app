@@ -3,6 +3,7 @@
 import { useLanguage } from '@/hooks/useLanguage'
 import { translations } from '@/lib/translations'
 import { Leaf } from 'lucide-react'
+import Image from 'next/image'
 
 export function AboutSection() {
   const { lang } = useLanguage()
@@ -14,7 +15,13 @@ export function AboutSection() {
         <div className="grid md:grid-cols-2 gap-16 items-center">
           <div className="fade-in-right relative">
             <div className="aspect-square md:aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl relative">
-              <img src="/images/ubiferry.jpeg" alt="Petani RISEFARM" className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" />
+              <Image
+                src="/images/ubiferry.jpeg"
+                alt="Petani RISEFARM"
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
+              />
               <div className="absolute inset-0 bg-emerald-900/10 hover:bg-transparent transition-colors duration-500"></div>
             </div>
 

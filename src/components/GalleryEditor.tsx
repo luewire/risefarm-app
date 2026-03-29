@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { CloudUpload, Loader2, CheckCircle2, AlertCircle, X, Image as ImageIcon } from 'lucide-react'
+import Image from 'next/image'
 
 export function GalleryEditor() {
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -9,6 +10,29 @@ export function GalleryEditor() {
   const [imageUrl, setImageUrl] = useState('')
   const [caption, setCaption] = useState('')
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null)
+  const [images, setImages] = useState<any[]>([])
+  const [loadingImages, setLoadingImages] = useState(true)
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const fetchImages = async () => {
+    try {
+      const res = await fetch('/api/gallery')
+      if (res.ok) {
+        const data = await res.json()
+        setImages(data)
+      }
+    } catch (error) {
+      console.error('Failed to load gallery images', error)
+    } finally {
+      setLoadingImages(false)
+    }
+  }
+
+  // Fetch immediately on mount
+  useState(() => {
+    fetchImages()
+  })
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type })
@@ -61,6 +85,7 @@ export function GalleryEditor() {
       showToast("Berhasil ditambahkan ke Dokumentasi!", "success")
       setImageUrl("")
       setCaption("")
+      fetchImages() // Refresh the list
     } catch (error) {
       console.error(error)
       showToast(error instanceof Error ? error.message : "Gagal menyimpan ke database", "error")
@@ -85,6 +110,25 @@ export function GalleryEditor() {
       handleImageUpload(file)
     } else {
       showToast('Mohon upload file gambar yang valid', 'error')
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    setIsDeleting(true)
+    try {
+      const res = await fetch(`/api/gallery/${id}`, {
+        method: 'DELETE',
+      })
+      if (!res.ok) throw new Error('Gagal menghapus gambar')
+      
+      showToast("Foto berhasil dihapus!", "success")
+      setDeleteConfirmId(null)
+      fetchImages()
+    } catch (error) {
+      console.error(error)
+      showToast("Gagal menghapus foto", "error")
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -135,7 +179,16 @@ export function GalleryEditor() {
               >
                 {imageUrl ? (
                   <div className="flex flex-col items-center">
-                    <img src={imageUrl} alt="Preview" className="h-64 object-cover rounded-xl shadow-sm mb-4" />
+                    <div className="relative w-full h-64 rounded-xl shadow-sm mb-4 overflow-hidden">
+                      <Image
+                        src={imageUrl}
+                        alt="Preview"
+                        fill
+                        unoptimized
+                        sizes="(max-width: 768px) 100vw, 500px"
+                        className="h-64 object-cover"
+                      />
+                    </div>
                     <button onClick={() => setImageUrl("")} className="text-red-500 font-semibold text-sm hover:underline">Hapus Foto</button>
                   </div>
                 ) : (
@@ -177,9 +230,84 @@ export function GalleryEditor() {
               />
             </div>
           </div>
+        </div>
 
+        {/* Existing Gallery Grid */}
+        <div className="mt-12">
+          <h2 className="text-2xl font-bold text-emerald-950 mb-6 border-b border-stone-200 pb-4">
+            Foto Tersimpan
+          </h2>
+          
+          {loadingImages ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+            </div>
+          ) : images.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {images.map(img => (
+                <div key={img.id} className="group relative bg-white rounded-2xl overflow-hidden shadow-sm border border-stone-200 aspect-square">
+                  <Image
+                    src={img.url}
+                    alt={img.caption || 'Gallery'}
+                    fill
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                    className="w-full h-full object-cover"
+                  />
+                  
+                  {/* Hover Overlay */}
+                  <div className="absolute inset-0 bg-stone-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-4">
+                    <p className="text-white text-xs text-center line-clamp-2 mb-3 font-semibold">
+                      {img.caption || 'Tanpa keterangan'}
+                    </p>
+                    <button 
+                      onClick={() => setDeleteConfirmId(img.id)}
+                      className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow-lg transition-transform hover:scale-110"
+                      title="Hapus Foto"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-white rounded-3xl border border-stone-200 border-dashed">
+              <p className="text-stone-500">Belum ada foto yang diunggah.</p>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 z-[200] bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200">
+            <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-4 mx-auto">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            <h3 className="text-xl font-bold text-center text-stone-900 mb-2">Hapus Foto?</h3>
+            <p className="text-stone-500 text-center mb-8 text-sm">
+              Apakah Anda yakin ingin menghapus foto ini secara permanen dari galeri? Tindakan ini tidak dapat dibatalkan.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setDeleteConfirmId(null)}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-3 rounded-xl border border-stone-200 text-stone-600 font-semibold hover:bg-stone-50 transition-colors disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button 
+                onClick={() => handleDelete(deleteConfirmId)}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Ya, Hapus'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -4,22 +4,15 @@ import { useLanguage } from '@/hooks/useLanguage'
 import { useAuth } from '@/hooks/useAuth'
 import { translations } from '@/lib/translations'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
 import { ArticleCard } from '@/components/ArticleCard'
+import { useFetch } from '@/hooks/useFetch'
 
 export function ArticlesPreviewSection() {
   const { lang } = useLanguage()
   const { isAuthenticated } = useAuth()
   const t = translations[lang].articles
-  const [articles, setArticles] = useState([])
-
-  useEffect(() => {
-    fetch(`/api/articles?lang=${lang}`)
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) setArticles(data.slice(0, 3) as never)
-      })
-  }, [lang])
+  const { data, loading, error, refetch } = useFetch<any[]>(`/api/articles?lang=${lang}`)
+  const articles = Array.isArray(data) ? data.slice(0, 3) : []
 
   return (
     <section id="articles" className="py-24 bg-[#F8F4ED]">
@@ -43,11 +36,34 @@ export function ArticlesPreviewSection() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
-          {articles.map((article: any) => (
-            <div key={article.id} className="h-full">
-              <ArticleCard article={article} lang={lang} isAdmin={!!isAuthenticated} />
+          {loading ? (
+            Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-[420px] rounded-3xl bg-[#F0EBE1] animate-pulse border border-[#1C4A2E]/5" />
+            ))
+          ) : error ? (
+            <div className="md:col-span-3 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-red-700">
+              <p className="font-semibold">
+                {lang === 'en' ? 'Failed to load articles.' : 'Gagal memuat artikel.'}
+              </p>
+              <p className="text-sm mt-1 mb-3">{error}</p>
+              <button
+                onClick={refetch}
+                className="px-4 py-2 rounded-full bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors"
+              >
+                {lang === 'en' ? 'Try again' : 'Coba lagi'}
+              </button>
             </div>
-          ))}
+          ) : articles.length === 0 ? (
+            <p className="text-stone-500 font-medium md:col-span-3">
+              {lang === 'en' ? 'No published articles yet.' : 'Belum ada artikel yang dipublikasikan.'}
+            </p>
+          ) : (
+            articles.map((article: any) => (
+              <div key={article.id} className="h-full">
+                <ArticleCard article={article} lang={lang} isAdmin={!!isAuthenticated} />
+              </div>
+            ))
+          )}
         </div>
       </div>
     </section>

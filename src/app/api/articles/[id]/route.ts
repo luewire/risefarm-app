@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma'
 import { verifyToken } from '@/lib/auth'
 import { cookies } from 'next/headers'
 import { slugify } from '@/lib/slugify'
+import { revalidatePath } from 'next/cache'
 
 export async function GET(
   request: Request,
@@ -74,28 +75,6 @@ export async function PUT(
     const prismaAny = prisma as any
     const { id } = await params
     const data = await request.json()
-    const locale = data.lang === 'en' ? 'en' : 'id'
-
-    let uniqueSlug: string | undefined
-    if (data.title) {
-      const baseSlug = slugify(data.title)
-      uniqueSlug = baseSlug
-      let counter = 1
-      while (
-        await prismaAny.articleTranslation.findFirst({
-          where: {
-            slug: uniqueSlug,
-            locale,
-            NOT: {
-              articleId: id,
-            },
-          },
-        })
-      ) {
-        uniqueSlug = `${baseSlug}-${counter}`
-        counter++
-      }
-    }
 
     let publishedAtUpdate: Date | null | undefined
     if (data.status === 'published') {
@@ -104,52 +83,58 @@ export async function PUT(
       publishedAtUpdate = null
     }
 
-    const article = await prismaAny.article.update({
-      where: { id },
-      data: {
-        category: data.category,
-        author: data.author,
-        image: data.image,
-        status: data.status,
-        ...(publishedAtUpdate !== undefined ? { publishedAt: publishedAtUpdate } : {}),
-        translations: {
-          upsert: {
-            where: {
-              articleId_locale: {
-                articleId: id,
-                locale,
-              },
-            },
-            create: {
-              locale,
-              title: data.title || 'Tanpa Judul',
-              slug: uniqueSlug || slugify(data.title || `article-${Date.now()}`),
-              excerpt: data.excerpt || '',
-              content: data.content || '',
-            },
-            update: {
-              title: data.title,
-              slug: uniqueSlug,
-              excerpt: data.excerpt,
-              content: data.content,
-            },
-          },
-        },
-      },
-      include: {
-        translations: {
-          where: {
-            locale: {
-              in: locale === 'en' ? ['en', 'id'] : ['id'],
-            },
-          },
-        },
-      },
-    })
+    // Build upserts for each locale
+    const upserts: any[] = []
 
-    const localized =
-      article.translations.find((t: any) => t.locale === locale) ??
-      article.translations.find((t: any) => t.locale === 'id')
+    for (const locale of ['id', 'en'] as const) {
+      const title = locale === 'id' ? data.id_title : data.en_title
+      if (!title) continue
+
+      const excerpt = locale === 'id' ? (data.id_excerpt || '') : (data.en_excerpt || '')
+      const content = locale === 'id' ? (data.id_content || '') : (data.en_content || '')
+
+      const baseSlug = slugify(title)
+      let uniqueSlug = baseSlug
+      let counter = 1
+      while (
+        await prismaAny.articleTranslation.findFirst({
+          where: { slug: uniqueSlug, locale, NOT: { articleId: id } },
+        })
+      ) {
+        uniqueSlug = `${baseSlug}-${counter}`
+        counter++
+      }
+
+      upserts.push(
+        prismaAny.articleTranslation.upsert({
+          where: { articleId_locale: { articleId: id, locale } },
+          create: { articleId: id, locale, title, slug: uniqueSlug, excerpt, content },
+          update: { title, slug: uniqueSlug, excerpt, content },
+        })
+      )
+    }
+
+    // Run article update + all translation upserts in parallel
+    const [article] = await Promise.all([
+      prismaAny.article.update({
+        where: { id },
+        data: {
+          category: data.category,
+          author: data.author,
+          image: data.image,
+          status: data.status,
+          ...(publishedAtUpdate !== undefined ? { publishedAt: publishedAtUpdate } : {}),
+        },
+        include: { translations: true },
+      }),
+      ...upserts,
+    ])
+
+    const idTranslation = article.translations.find((t: any) => t.locale === 'id') ?? article.translations[0]
+
+    revalidatePath('/', 'layout')
+    revalidatePath('/news', 'page')
+    revalidatePath(`/news/${idTranslation?.slug || ''}`, 'page')
 
     return NextResponse.json({
       id: article.id,
@@ -160,16 +145,19 @@ export async function PUT(
       createdAt: article.createdAt,
       publishedAt: article.publishedAt,
       updatedAt: article.updatedAt,
-      locale: localized?.locale || locale,
-      title: localized?.title || data.title || 'Tanpa Judul',
-      slug: localized?.slug || uniqueSlug || '',
-      excerpt: localized?.excerpt || data.excerpt || '',
-      content: localized?.content || data.content || '',
+      locale: idTranslation?.locale || 'id',
+      title: idTranslation?.title || '',
+      slug: idTranslation?.slug || '',
+      excerpt: idTranslation?.excerpt || '',
+      content: idTranslation?.content || '',
+      translations: article.translations,
     })
   } catch (error) {
+    console.error(error)
     return NextResponse.json({ error: 'Failed to update article' }, { status: 500 })
   }
 }
+
 
 export async function DELETE(
   request: Request,

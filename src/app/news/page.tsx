@@ -4,8 +4,33 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { NewsListClient } from './NewsListClient'
 import { getArticlesByLocaleWithFallback } from '@/lib/article-i18n'
+import type { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
+
+export const metadata: Metadata = {
+  title: 'Artikel & Berita',
+  description:
+    'Baca artikel dan berita terbaru dari RISEFARM — seputar dunia agritech ubi, pertanian regeneratif, ubi Cilembu, ubi ekspor, dan pemberdayaan petani lokal Indonesia.',
+  keywords: [
+    'berita agritech ubi',
+    'artikel ubi Cilembu',
+    'pertanian regeneratif Indonesia',
+    'berita RISEFARM',
+    'ubi ekspor terbaru',
+  ],
+  alternates: {
+    canonical: 'https://risefarm.asia/news',
+  },
+  openGraph: {
+    type: 'website',
+    title: 'Artikel & Berita RISEFARM',
+    description: 'Berita dan artikel terbaru tentang agritech ubi dan pertanian dari RISEFARM.',
+    url: 'https://risefarm.asia/news',
+    siteName: 'RISEFARM',
+  },
+}
+
 
 export default async function NewsList() {
   const cookieStore = await cookies()

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { translations } from '@/lib/translations'
+import Image from 'next/image'
 
 interface Article {
   id: string
@@ -46,7 +47,7 @@ export function ArticleCard({
 
   return (
     <article className="bg-white rounded-3xl overflow-hidden shadow-lg border border-stone-100 group flex flex-col h-full">
-      <div className="h-64 overflow-hidden relative">
+      <div className="h-52 overflow-hidden relative">
         <div className="absolute top-4 right-4 flex gap-2 z-10">
           <span className="bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">
             {article.category || t.news.defaultCategory}
@@ -57,10 +58,16 @@ export function ArticleCard({
             </span>
           )}
         </div>
-        <img src={article.image || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80'} alt={article.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+        <Image
+          src={article.image || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80'}
+          alt={article.title}
+          fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+        />
       </div>
       
-      <div className="p-8 flex flex-col flex-grow">
+      <div className="p-6 flex flex-col flex-grow">
         <h3 className="text-2xl font-bold text-emerald-950 mb-3 line-clamp-2">{article.title}</h3>
         <p className="text-stone-600 mb-6 flex-grow line-clamp-3">{article.excerpt}</p>
         

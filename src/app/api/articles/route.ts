@@ -3,13 +3,20 @@ import prisma from '@/lib/prisma'
 import { slugify } from '@/lib/slugify'
 import { verifyToken } from '@/lib/auth'
 import { cookies } from 'next/headers'
-import { getArticlesByLocaleWithFallback } from '@/lib/article-i18n'
+import { getArticlesByLocaleWithFallback, getAllArticlesForAdmin } from '@/lib/article-i18n'
+import { revalidatePath } from 'next/cache'
+
+// Articles change more often, 1 min fresh, 2 min stale
+const ARTICLES_CACHE_HEADERS = {
+  'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+}
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
     const lang = searchParams.get('lang') === 'en' ? 'en' : 'id'
+    const wantsAll = searchParams.get('admin') === 'true'
     
     const cookieStore = await cookies()
     const token = cookieStore.get('risefarm_token')?.value
@@ -19,12 +26,23 @@ export async function GET(request: Request) {
       if (payload) isAdmin = true
     }
     
+    // Admin requesting all articles (for editor list), no cache
+    if (wantsAll && isAdmin) {
+      const allArticles = await getAllArticlesForAdmin()
+      const filtered = category
+        ? allArticles.filter((article) => article.category === category)
+        : allArticles
+      return NextResponse.json(filtered, {
+        headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+      })
+    }
+
     const localizedArticles = await getArticlesByLocaleWithFallback(lang, isAdmin)
     const articles = category
       ? localizedArticles.filter((article) => article.category === category)
       : localizedArticles
     
-    return NextResponse.json(articles)
+    return NextResponse.json(articles, { headers: ARTICLES_CACHE_HEADERS })
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch articles' }, { status: 500 })
   }
@@ -41,14 +59,30 @@ export async function POST(request: Request) {
 
     const data = await request.json()
     const prismaAny = prisma as any
-    const locale = data.lang === 'en' ? 'en' : 'id'
-    const slug = slugify(data.title || 'artikel-baru')
 
-    let uniqueSlug = slug
-    let counter = 1
-    while (await prismaAny.articleTranslation.findUnique({ where: { slug_locale: { slug: uniqueSlug, locale } } })) {
-      uniqueSlug = `${slug}-${counter}`
-      counter++
+    // Build translations array for both locales
+    const translationsToCreate: any[] = []
+
+    for (const locale of ['id', 'en'] as const) {
+      const title = locale === 'id' ? data.id_title : data.en_title
+      if (!title) continue // skip if no title for this locale
+
+      const excerpt = locale === 'id' ? (data.id_excerpt || '') : (data.en_excerpt || '')
+      const content = locale === 'id' ? (data.id_content || '') : (data.en_content || '')
+
+      const baseSlug = slugify(title)
+      let uniqueSlug = baseSlug
+      let counter = 1
+      while (await prismaAny.articleTranslation.findUnique({ where: { slug_locale: { slug: uniqueSlug, locale } } })) {
+        uniqueSlug = `${baseSlug}-${counter}`
+        counter++
+      }
+
+      translationsToCreate.push({ locale, title, slug: uniqueSlug, excerpt, content })
+    }
+
+    if (translationsToCreate.length === 0) {
+      return NextResponse.json({ error: 'At least one language title is required' }, { status: 400 })
     }
 
     const article = await prismaAny.article.create({
@@ -59,16 +93,17 @@ export async function POST(request: Request) {
         status: data.status || 'draft',
         publishedAt: data.status === 'published' ? new Date() : null,
         translations: {
-          create: {
-            locale,
-            title: data.title || 'Tanpa Judul',
-            slug: uniqueSlug,
-            excerpt: data.excerpt || '',
-            content: data.content || '',
-          },
+          create: translationsToCreate,
         },
-      }
+      },
+      include: { translations: true },
     })
+
+    const idTranslation = article.translations.find((t: any) => t.locale === 'id') ?? article.translations[0]
+
+    // Purge caches on new article
+    revalidatePath('/', 'layout')
+    revalidatePath('/news', 'page')
 
     return NextResponse.json(
       {
@@ -80,11 +115,12 @@ export async function POST(request: Request) {
         createdAt: article.createdAt,
         publishedAt: article.publishedAt,
         updatedAt: article.updatedAt,
-        locale,
-        title: data.title || 'Tanpa Judul',
-        slug: uniqueSlug,
-        excerpt: data.excerpt || '',
-        content: data.content || '',
+        locale: idTranslation.locale,
+        title: idTranslation.title,
+        slug: idTranslation.slug,
+        excerpt: idTranslation.excerpt,
+        content: idTranslation.content,
+        translations: article.translations,
       },
       { status: 201 }
     )
@@ -93,3 +129,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to create article' }, { status: 500 })
   }
 }
+

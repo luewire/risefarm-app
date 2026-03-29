@@ -53,8 +53,8 @@ export function NewsListClient({ initialArticles, isAuthenticated, lang }: Props
             <h1 className="text-4xl md:text-6xl font-sans font-bold text-[#0A3A2D] mb-4">{t.news.title}</h1>
             <p className="text-stone-600 text-lg max-w-3xl">
               {lang === 'id'
-                ? 'Semua artikel yang sudah dipublikasikan akan tampil di sini. Konten dapat ditulis dari halaman editor dan tersimpan otomatis di browser melalui localStorage.'
-                : 'All published articles are shown here. Content can be written from the editor page and is saved automatically in the browser via localStorage.'}
+                ? 'Temukan informasi terbaru, wawasan industri pertanian, dan kabar terkini seputar perjalanan Risefarm dalam menghadirkan hasil panen berkualitas tinggi.'
+                : "Discover the latest information, agricultural industry insights, and current news about Risefarm's journey in delivering high-quality harvests."}
             </p>
           </div>
 
@@ -93,7 +93,7 @@ export function NewsListClient({ initialArticles, isAuthenticated, lang }: Props
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredArticles.map((article) => (
               <ArticleCard
                 key={article.id}

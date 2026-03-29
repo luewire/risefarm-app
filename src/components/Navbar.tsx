@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Leaf, Menu, X, SquarePen, ChevronDown, Image as ImageIcon } from 'lucide-react'
+import { Leaf, Menu, X, SquarePen, ChevronDown, Image as ImageIcon, Package } from 'lucide-react'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useAuth } from '@/hooks/useAuth'
 import { translations } from '@/lib/translations'
@@ -75,6 +75,10 @@ export function Navbar() {
                     <SquarePen className="w-4 h-4" />
                     Tulis Artikel
                   </Link>
+                  <Link href="/editor/products" className="px-5 py-2.5 text-sm font-semibold text-stone-700 hover:text-emerald-700 hover:bg-emerald-50 transition-colors flex items-center gap-3">
+                    <Package className="w-4 h-4" />
+                    Katalog Produk
+                  </Link>
                   <Link href="/editor/gallery" className="px-5 py-2.5 text-sm font-semibold text-stone-700 hover:text-emerald-700 hover:bg-emerald-50 transition-colors flex items-center gap-3">
                     <ImageIcon className="w-4 h-4" />
                     Tambahkan Foto
@@ -92,22 +96,28 @@ export function Navbar() {
               <button onClick={() => changeLanguage('en')} className={`w-8 h-8 flex items-center justify-center rounded-full border text-[10px] font-bold transition-all duration-300 ${lang === 'en' ? 'bg-white/20 border-white text-white' : 'border-white/20 text-white hover:bg-white/10'}`}>EN</button>
             </div>
 
-            {/* Admin Login/Logout Button */}
-            {isAuthenticated ? (
-              <button onClick={logout} className="bg-white text-[#1A1208] px-5 py-2 md:py-2.5 rounded-full text-sm font-semibold hover:bg-gray-100 shrink-0 transition-colors">Logout Admin</button>
-            ) : (
-              <button onClick={() => setIsLoginModalOpen(true)} className="bg-white text-[#1A1208] px-5 py-2 md:py-2.5 rounded-full text-sm font-semibold hover:bg-gray-100 shrink-0 transition-colors">Admin Login</button>
-            )}
+            {/* Admin Login/Logout Button — hanya tampil di desktop */}
+            <div className="hidden lg:flex">
+              {isAuthenticated ? (
+                <button onClick={logout} className="bg-white text-[#1A1208] px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-gray-100 shrink-0 transition-colors">Logout Admin</button>
+              ) : (
+                <button onClick={() => setIsLoginModalOpen(true)} className="bg-white text-[#1A1208] px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-gray-100 shrink-0 transition-colors">Admin Login</button>
+              )}
+            </div>
 
-            {/* Mobile Toggle */}
-            <button className="lg:hidden text-white shrink-0 ml-1" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            {/* Mobile Toggle - SUDAH BENAR (hilang saat lg:hidden) */}
+            <button
+              className="lg:hidden text-white shrink-0 ml-1 mr-3 inline-flex h-12 w-12 items-center justify-center rounded-full hover:bg-white/10 active:scale-95 transition"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'}
+            >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
       </nav>
 
-      {/* Mobile Menu Dropdown */}
+      {/* Mobile Menu Dropdown - TIDAK DIUBAH */}
       {mobileMenuOpen && (
         <div className="fixed top-24 left-1/2 -translate-x-1/2 z-40 w-[95%] max-w-lg bg-[#1A1208]/95 backdrop-blur-xl border border-white/10 rounded-3xl p-6 lg:hidden flex flex-col gap-5 shadow-2xl">
           <Link href="/#about" onClick={() => setMobileMenuOpen(false)} className="text-white/90 font-medium text-lg hover:text-orange-500 transition-colors">{t.nav.about}</Link>
@@ -123,6 +133,10 @@ export function Navbar() {
                <Link href="/editor" onClick={() => setMobileMenuOpen(false)} className="text-emerald-400 font-bold text-lg hover:text-orange-500 transition-colors flex items-center gap-2">
                  <SquarePen className="w-5 h-5" />
                  Tulis Artikel
+               </Link>
+               <Link href="/editor/products" onClick={() => setMobileMenuOpen(false)} className="text-emerald-400 font-bold text-lg hover:text-orange-500 transition-colors flex items-center gap-2">
+                 <Package className="w-5 h-5" />
+                 Katalog Produk
                </Link>
                <Link href="/editor/gallery" onClick={() => setMobileMenuOpen(false)} className="text-emerald-400 font-bold text-lg hover:text-orange-500 transition-colors flex items-center gap-2">
                  <ImageIcon className="w-5 h-5" />

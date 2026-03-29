@@ -1,16 +1,22 @@
 import { NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import prisma from '@/lib/prisma'
 import { verifyToken } from '@/lib/auth'
 import { cookies } from 'next/headers'
 
 const db = prisma as any
 
+// Gallery images rarely change — cache for 5 min, allow stale for 10 min.
+const GALLERY_CACHE_HEADERS = {
+  'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+}
+
 export async function GET() {
   try {
     const images = await db.galleryImage.findMany({
       orderBy: { createdAt: 'desc' }
     })
-    return NextResponse.json(images)
+    return NextResponse.json(images, { headers: GALLERY_CACHE_HEADERS })
   } catch (error) {
     console.error('Failed to fetch gallery images:', error)
     return NextResponse.json({ error: 'Failed to fetch gallery images' }, { status: 500 })
@@ -44,6 +50,8 @@ export async function POST(req: Request) {
         caption: caption || '',
       }
     })
+
+    revalidatePath('/', 'layout')
 
     return NextResponse.json(image)
   } catch (error) {

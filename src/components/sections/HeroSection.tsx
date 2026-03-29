@@ -4,6 +4,7 @@ import { useLanguage } from '@/hooks/useLanguage'
 import { translations } from '@/lib/translations'
 import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
+import Image from 'next/image'
 
 export function HeroSection() {
   const { lang } = useLanguage()
@@ -12,7 +13,14 @@ export function HeroSection() {
   return (
     <section id="home" className="relative min-h-screen flex items-center pt-20">
       <div className="absolute inset-0 z-0">
-        <img src="/images/cuciubi_pak_rama.jpeg" alt="Perkebunan Ubi" className="w-full h-full object-cover" />
+        <Image
+          src="/images/cuciubi_pak_rama.jpeg"
+          alt="Perkebunan Ubi"
+          fill
+          priority
+          sizes="100vw"
+          className="w-full h-full object-cover"
+        />
         <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/90 via-emerald-900/70 to-transparent"></div>
       </div>
 

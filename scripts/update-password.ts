@@ -6,9 +6,9 @@ const prisma = new PrismaClient()
 async function main() {
   const hash = await bcrypt.hash('RiseFarmbebas2026', 10)
   await prisma.admin.upsert({
-    where: { username: 'admin' },
+    where: { username: 'RiseFarmbebas2026' },
     update: { passwordHash: hash }, // FORCE UPDATE
-    create: { username: 'admin', passwordHash: hash }
+    create: { username: 'RiseFarmbebas2026', passwordHash: hash }
   })
   console.log("Admin password updated successfully!")
 }
