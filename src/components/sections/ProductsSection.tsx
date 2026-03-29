@@ -61,22 +61,17 @@ export function ProductsSection() {
         </div>
 
         <div className="relative -mx-6 md:-mx-12 group">
+          {error && products.length === 0 && (
+            <div className="mb-4 mx-6 md:mx-12 rounded-2xl border border-orange-200 bg-orange-50 text-orange-800 px-5 py-4 text-sm font-medium text-center">
+              {lang === 'en' ? 'Failed to load products from server. Showing backup catalog.' : 'Gagal memuat produk dari server. Menampilkan katalog cadangan.'}
+            </div>
+          )}
           {/* Scrollable Container */}
           <div 
             ref={carouselRef}
             onScroll={handleScroll}
             className="hide-scrollbar flex gap-6 md:gap-8 overflow-x-auto snap-x snap-mandatory pt-4 pb-12 pl-[max(7.5vw,env(safe-area-inset-left))] pr-[max(7.5vw,env(safe-area-inset-right))] md:px-12"
           >
-            {error && products.length === 0 && (
-              <div className="shrink-0 w-full snap-start rounded-2xl border border-orange-200 bg-orange-50 text-orange-800 px-5 py-4 text-sm font-medium">
-                {lang === 'en' ? 'Failed to load products from server. Showing backup catalog.' : 'Gagal memuat produk dari server. Menampilkan katalog cadangan.'}
-              </div>
-            )}
-            {!loading && !error && products.length === 0 && (
-              <div className="shrink-0 w-full snap-start rounded-2xl border border-stone-200 bg-white text-stone-600 px-5 py-4 text-sm font-medium">
-                {lang === 'en' ? 'No products published yet.' : 'Belum ada produk yang dipublikasikan.'}
-              </div>
-            )}
             {!loading && products.length > 0 ? (
               products.map((p) => {
                 const trans = p.translations.find(tr => tr.locale === lang) || p.translations[0]
